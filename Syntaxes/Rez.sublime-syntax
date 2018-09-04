@@ -1,0 +1,103 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Rez
+comment: Rez. Legacy Mac OS source code frequently contains Rez files. – chris@cjack.com
+file_extensions:
+  - r
+  - rez
+scope: source.rez
+contexts:
+  main:
+    - match: /\*
+      scope: punctuation.definition.comment.rez
+      push:
+        - meta_scope: comment.block.rez
+        - match: \*/
+          scope: punctuation.definition.comment.rez
+          pop: true
+    - match: //
+      scope: punctuation.definition.comment.rez
+      push:
+        - meta_scope: comment.line.double-slash.rez
+        - match: \n
+          pop: true
+    - match: \b(?i:(change|data|delete|include|read|resource))\b
+      comment: Note that Xcode gets case sensitivity wrong (last checked Xcode 2.0). I'm not sure built-in functions are case-insensitive, though, so we might too.
+      scope: keyword.control.rez
+    - match: \b(?i:(align|array|binary|bit|bitstring|boolean|byte|case|char|cstring|decimal|enum|fill|hex|integer|key|literal|long|longint|nibble|octal|optional|point|pstring|rect|reversebytes|string|switch|unsigned|wide|word|wstring))\b
+      scope: storage.type.rez
+    - match: \b(?i:(appheap|locked|nonpurgeable|purgeable|sysheap|unlocked))\b
+      scope: keyword.other.attributes.rez
+    - match: (\$\$)(?i:(ArrayIndex|Attributes|BitField|Byte|CountOf|Date|Day|Format|Hour|ID|Long|Minute|Month|Name|OptionalCount|PackedSize|Read|Resource|ResourceSize|Second|Shell|Time|Type|Version|Weekday|Word|Year))
+      scope: support.function.built-in.rez
+      captures:
+        1: punctuation.definition.function.rez
+    - match: '\b(((0(x|X|B))[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b'
+      scope: constant.numeric.rez
+    - match: '\$[0-9a-fA-F]+?\b'
+      scope: constant.numeric.hex.rez
+    - match: '"'
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_scope: string.quoted.double.rez
+        - match: '"'
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - include: escaped_char
+        - match: \n
+          scope: invalid.illegal
+          pop: true
+
+    - match: "'"
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_scope: string.quoted.single.rez
+        - match: "'"
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - match: \n
+          scope: invalid.illegal
+          pop: true
+
+    - match: \$"
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_scope: string.quoted.other.hex.rez
+        - match: '"'
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - match: '[^0-9A-Fa-f \t]'
+          scope: invalid.illegal
+    - match: ^\s*(#)\s*(?i:(defined|else|elif|endif|if|ifdef|ifndef|include|line|printf|undef))\b
+      scope: meta.preprocessor.rez
+      captures:
+        1: punctuation.definition.preprocessor.rez
+        2: keyword.control.import.rez
+    - match: '^\s*(#)\s*(?i:(define))\s+([_A-Za-z][_A-Za-z0-9]+)'
+      scope: meta.preprocessor.define.rez
+      captures:
+        1: punctuation.definition.preprocessor.rez
+        2: keyword.control.import.rez
+        3: entity.name.function.define.rez
+    - match: '\b(?i:(type|resource))\s+([_A-Za-z][_A-Za-z0-9]+|(0x|\$)[A-Fa-f0-9]+|[0-9]+|''[^'']{1,4}'')'
+      scope: meta.type.rez
+      captures:
+        1: keyword.control.rez
+        2: entity.name.function.rez
+
+  escaped_char:
+    - match: \\0[xX]\h{2}
+      scope: constant.character.escape.rez
+    - match: \\\$\h{2}
+      scope: constant.character.escape.rez
+    - match: \\0[dD]\d{3}
+      scope: constant.character.escape.rez
+    - match: \\[0-7]{3}
+      scope: constant.character.escape.rez
+    - match: \\0[bB][01]{8}
+      scope: constant.character.escape.rez
+    - match: \\[tbrnfv?\'"]
+      scope: constant.character.escape.rez
+    - match: \\.
+      scope: invalid.illegal
