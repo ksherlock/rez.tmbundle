@@ -1,0 +1,28 @@
+{
+	"scope": "source.rez.iigs meta.resource.rez meta.attributes.rez",
+	"completions": [
+		"fixed",
+		"moveable",
+		"absoluteload",
+		"handleload",
+		"nonpurgeable",
+		"purgeable1",
+		"purgeable2",
+		"purgeable3",
+		"pagealigned",
+		"notpagealigned",
+		"convert",
+		"special",
+		"preload",
+		"crossbank",
+		"specialmemory",
+		"noconvert",
+		"nospecial",
+		"nopreload",
+		"nocrossbank",
+		"nospecialmemory",
+		"unlocked",
+		"unprotected"
+	]
+}
+

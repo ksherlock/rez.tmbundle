@@ -1,0 +1,415 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Rez IIgs
+file_extensions:
+  - r
+  - rez
+  - rii
+scope: source.rez.iigs
+variables:
+  ident: '[_A-Za-z][_A-Za-z0-9]*'
+
+contexts:
+  prototype:
+    - include: comments
+  main:
+    - include: top-level
+    - include: block-level
+
+  block-level:
+    - include: comments
+    - include: strings
+    - include: preprocessor
+    - include: numbers
+    - include: constants
+
+
+    - match: \b(?i:change|data|delete|include|read)\b
+      comment: Note that Xcode gets case sensitivity wrong (last checked Xcode 2.0). I'm not sure built-in functions are case-insensitive, though, so we might too.
+      scope: keyword.control.rez
+    - match: \b(?i:(align|array|binary|bit|bitstring|boolean|byte|case|char|cstring|decimal|enum|fill|hex|integer|key|literal|long|longint|nibble|octal|optional|point|pstring|rect|reversebytes|string|switch|unsigned|wide|word|wstring))\b
+      scope: storage.type.rez
+    - match: (\$\$)(?i:(ArrayIndex|Attributes|BitField|Byte|CountOf|Date|Day|Format|Hour|ID|Long|Minute|Month|Name|OptionalCount|PackedSize|Read|Resource|ResourceSize|Second|Shell|Time|Type|Version|Weekday|Word|Year))
+      scope: support.function.built-in.rez
+      captures:
+        1: punctuation.definition.function.rez
+
+    - match: '\{'
+      scope: punctuation.section.block.begin
+      push: 
+        - meta_scope: meta.block.rez 
+        - match: '\}'
+          scope: punctuation.section.block.end
+          pop: true
+        - include: block-level
+
+
+
+  escaped_char:
+    - match: \\0[xX]\h{2}
+      scope: constant.character.escape.rez
+    - match: \\\$\h{2}
+      scope: constant.character.escape.rez
+    - match: \\0[dD]\d{3}
+      scope: constant.character.escape.rez
+    - match: \\[0-7]{3}
+      scope: constant.character.escape.rez
+    - match: \\0[bB][01]{8}
+      scope: constant.character.escape.rez
+    - match: \\[tbrnfv?\'"]
+      scope: constant.character.escape.rez
+    - match: \\.
+      scope: invalid.illegal
+
+  top-level:
+    - include: resource-block
+    - include: type-block
+
+  # resource ID (parms) { ... }
+  # resource:
+  resource-block:
+    - match: '\b(?i:resource)\b'
+      scope: keyword.other.rez
+      set:
+        - expect-block
+        - resource-meta
+        - expect-parameters
+        - expect-id-or-number
+
+
+  # type ID { ... }
+  type-block:
+    - match: '\b(?i:type)\b'
+      scope: keyword.other.rez
+      set:
+        - expect-block
+        - type-meta
+        - expect-block
+        - type-expect-id-or-number
+
+
+  type-meta:
+    - meta_scope: meta.type.rez
+    - match: ''
+      pop: true
+
+  resource-meta:
+    - meta_scope: meta.resource.rez
+    - match: ''
+      pop: true
+
+  resource-attr-meta:
+    - meta_scope: meta.attributes.rez
+    - match: ''
+      pop: true
+
+
+
+  else-pop:
+    - match: (?=\S)
+      pop: true
+
+  expect-id-or-number:
+    - match: '{{ident}}'
+      scope: storage.type.rez
+      pop: true
+
+    - match: \d+
+      scope: constant.numeric
+      pop: true
+
+    - match: 0[xX]\h+
+      scope: constant.numeric.hex
+      pop: true
+
+    - match: \$h+
+      scope: constant.numeric.hex
+      pop: true
+
+
+    - match: '\$\h+'
+      scope: support.constant
+      pop: true
+
+    - include: else-pop
+
+
+  type-expect-id-or-number:
+    - match: '{{ident}}'
+      scope: entity.name.function
+      pop: true
+
+    - match: \d+
+      scope: constant.numeric
+      pop: true
+
+    - match: 0[xX]\h+
+      scope: constant.numeric.hex
+      pop: true
+
+    - match: \$h+
+      scope: constant.numeric.hex
+      pop: true
+
+
+    - match: '\$\h+'
+      scope: support.constant
+      pop: true
+
+    - include: else-pop
+
+  expect-parameters:
+    - match: '\('
+      scope: punctuation.section.group.begin
+      set:
+        - resource-attr-meta
+        - expect-parms
+        - expect-parm-ident
+
+    #   push:
+    #     - meta_scope: meta.resource.attributes
+    #     - match: '{{ident}}'
+    #       scope: entity.name.function.rez
+    #       set: parm-post-ident
+    # - include: else-pop
+
+  expect-parm-ident:
+    - match: '{{ident}}'
+      scope: entity.name.function.rez
+      pop: true
+    - include: else-pop
+
+  expect-parms:
+    - match: '\)'
+      scope: punctuation.section.group.begin
+      pop: true
+    - match: \b(?i:fixed|moveable|absoluteload|handleload|nonpurgeable|purgeable[123])\b
+      scope: constant.language
+    - match: \b(?i:not)?(?i:pagealigned)\b
+      scope: constant.language
+    - match: \b(?i:no)?(?i:convert|special|preload|crossbank|specialmemory)\b
+      scope: constant.language
+    - match: \b(?i:un)?(?i:locked|protected)\b
+      scope: constant.language
+    - include: numbers
+
+
+  parm-post-ident:
+    - meta_scope: meta.resource.attributes
+    - match: '\)'
+      scope: punctuation.section.group.begin
+      pop: true
+    - include: numbers
+    - match: \b(fixed|moveable|absoluteload|handleload|purgeable[123])\b
+      scope: constant.language
+    - match: \b(not)?(pagealigned)\b
+      scope: constant.language
+    - match: \b(no)?(convert|special|preload|crossbank|specialmemory)\b
+      scope: constant.language
+    - match: \b(un)?(locked|protected)\b
+      scope: constant.language
+
+  expect-block:
+    - match: '\{'
+      scope: punctuation.section.block.begin
+      set: 
+        - meta_scope: meta.block.rez 
+        - match: '\}'
+          pop: true
+          scope: punctuation.section.block.end
+        - include: block-level
+    - include: else-pop
+
+
+  comments:
+    - match: /\*
+      scope: punctuation.definition.comment.rez
+      push:
+        - meta_include_prototype: false        
+        - meta_scope: comment.block.rez
+        - match: \*/
+          scope: punctuation.definition.comment.rez
+          pop: true
+    - match: //
+      scope: punctuation.definition.comment.rez
+      push:
+        - meta_include_prototype: false
+        - meta_scope: comment.line.double-slash.rez
+        - match: \n
+          pop: true
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.double.rez
+        - match: '"'
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - include: escaped_char
+        - match: \n
+          scope: invalid.illegal
+          pop: true
+
+
+    - match: \$"
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.other.hex.rez
+        - match: '"'
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - match: '[^0-9A-Fa-f \t]'
+          scope: invalid.illegal
+
+  numbers:
+    - match: '\b0[0-7]+\b'
+      scope: constant.numeric.oct.rez
+    - match: '\b0[bB][01]+\b'
+      scope: constant.numeric.bin.rez 
+    - match: '\b0[xX]\h+\b'
+      scope: constant.numeric.hex.rez 
+    - match: '\$\h+\b'
+      scope: constant.numeric.hex.rez 
+    - match: \d+
+      scope: constant.numeric.rez
+    - match: "'"
+      scope: punctuation.definition.string.begin.rez
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.single.rez
+        - match: "'"
+          scope: punctuation.definition.string.end.rez
+          pop: true
+        - include: escaped_char
+        - match: \n
+          scope: invalid.illegal
+          pop: true
+
+
+  preprocessor:
+
+    - match: ^\s*(?i:#\s*(defined|else|elif|endif|if|ifdef|ifndef|include|line|printf|undef))\b
+      captures:
+        0: keyword.control.import.rez
+      push:
+        - meta_scope: meta.preprocessor.rez
+        - match: '\n'
+          pop: true
+        - include: strings
+        - include: numbers 
+
+    - match: ^\s*(?i:#\s*define)\b
+      captures:
+        0: keyword.control.import.define.rez
+      push:
+        - meta_scope: meta.preprocessor.macro.rez
+        - match: '\n'
+          pop: true
+        - match: '{{ident}}'
+          scope: entity.name.constant.preprocessor
+          set:
+          - meta_content_scope: meta.preprocessor.macro.rez
+          - match: '\n'
+            pop: true
+          - include: strings
+          - include: numbers            
+
+  constants:
+    - match: \b(?i:AuxType|CanBeInActive|CompareAll|CompareDay)\b
+      scope: constant.language
+    - match: \b(?i:CompareHour|CompareMinute|CompareMonth|CompareSecond)\b
+      scope: constant.language
+    - match: \b(?i:CompareWeekday|CompareYear|CreateDateTime|CtlInactive|DefaultButton)\b
+      scope: constant.language
+    - match: \b(?i:DontLaunch|EOF|FCtlWantEvents|FctlCanBeTarget|FctlIsMultiPart)\b
+      scope: constant.language
+    - match: \b(?i:FctlProcNotPtr|FctlTarget|FctlTellAboutSize|FctlWantsEvents|Filename)\b
+      scope: constant.language
+    - match: \b(?i:Filetype|HFSCreator|HFSFileType|ItemRefShift)\b
+      scope: constant.language
+    - match: \b(?i:ItemStructRefShift|ItemTitleRefShift|KeyEquiv|LaunchThis|LocalAccess)\b
+      scope: constant.language
+    - match: \b(?i:MenuRefShift|MenuTitleRefShift|ModDateTime|NIL|NetworkAccess)\b
+      scope: constant.language
+    - match: \b(?i:NormalButton|OptionList|RefIsHandle|RefIsPointer|RefIsPtr)\b
+      scope: constant.language
+    - match: \b(?i:RefIsResource|Region|ResourceToResource|SquareButton)\b
+      scope: constant.language
+    - match: \b(?i:SquareShadowButton|TBBackColor|TBCenterJust|TBColor0|TBColor1|TBColor2)\b
+      scope: constant.language
+    - match: \b(?i:TBColor3|TBColor4|TBColor5|TBColor6|TBColor7|TBColor8|TBColor9)\b
+      scope: constant.language
+    - match: \b(?i:TBColorA|TBColorB|TBColorC|TBColorD|TBColorE|TBColorF|TBCourier)\b
+      scope: constant.language
+    - match: \b(?i:TBEndOfLine|TBFillJust|TBFont|TBForeColor|TBGeneva|TBHelvetica)\b
+      scope: constant.language
+    - match: \b(?i:TBLeftJust|TBLeftMargin|TBNewYork|TBRightJust|TBRightMargin)\b
+      scope: constant.language
+    - match: \b(?i:TBShaston|TBSpExtra|TBStyleBold|TBStyleHEX|TBStyleItalic)\b
+      scope: constant.language
+    - match: \b(?i:TBStyleOutline|TBStylePlain|TBStyleShadow|TBStyleUnderline|TBTimes)\b
+      scope: constant.language
+    - match: \b(?i:TBVenice|Where|creator|ctlInvis|ctlVisible|dataIsC1Input)\b
+      scope: constant.language
+    - match: \b(?i:dataIsC1Output|dataIsCString|dataIsPString|dataIsTextBlock)\b
+      scope: constant.language
+    - match: \b(?i:dataIsTextBox2|equal|fAlert|fAllocated|fAllowCache|fBScroll|fBlastText)\b
+      scope: constant.language
+    - match: \b(?i:fBold|fClose|fColorHilight|fCtlTie|fCustom|fDisableSelection)\b
+      scope: constant.language
+    - match: \b(?i:fDisabled|fDivider|fDontDrawResult|fDontDrawTitle)\b
+      scope: constant.language
+    - match: \b(?i:fDontHiliteTitle|fDrawBounds|fDrawIconInResult|fDrawInactiveSelection)\b
+      scope: constant.language
+    - match: \b(?i:fDrawPopDownIcon|fFlex|fGrow|fGrowRuler|fHilited|fInWindowOnly|fInfo)\b
+      scope: constant.language
+    - match: \b(?i:fItalic|fItemStruct|fMenuDefIsText|fMove|fNoScroll)\b
+      scope: constant.language
+    - match: \b(?i:fNoTrackIcon|fNoWordWrap|fNotControl|fOutline|fQContent|fRScroll)\b
+      scope: constant.language
+    - match: \b(?i:fReadOnly|fRightJustifyResult|fRightJustifyTitle|fShadow)\b
+      scope: constant.language
+    - match: \b(?i:fSingleFormat|fSingleStyle|fSmartCutPaste|fSubTextIsC)\b
+      scope: constant.language
+    - match: \b(?i:fSubTextIsPascal|fSubstituteText|fTabSwitch|fTitle|fType2PopUp)\b
+      scope: constant.language
+    - match: \b(?i:fUnderline|fVis|fXOR|fZoom|fZoomed|greater|handleToHandle)\b
+      scope: constant.language
+    - match: \b(?i:handleToPtr|handleToResource|lessThan|native|not|ptrToHandle)\b
+      scope: constant.language
+    - match: \b(?i:ptrToPtr|ptrToResource|rAlertString|rBundle|rC1InputString)\b
+      scope: constant.language
+    - match: \b(?i:rC1OutputString|rCDEVCode|rCDEVFlags|rCString|rCodeResource|rComment)\b
+      scope: constant.language
+    - match: \b(?i:rControlList|rControlTemplate|rCtlColorTbl|rCtlDefProc|rCursor)\b
+      scope: constant.language
+    - match: \b(?i:rErrorString|rFSequence|rFileType|rFinderPath|rFont|rIcon)\b
+      scope: constant.language
+    - match: \b(?i:rItemStruct|rKTransTable|rListRef|rMIBold|rMIDisabled|rMIDivider)\b
+      scope: constant.language
+    - match: \b(?i:rMIItalic|rMIItemStruct|rMIOutline|rMIPlain|rMIShadow)\b
+      scope: constant.language
+    - match: \b(?i:rMIUnderline|rMIXOr|rMenu|rMenuBar|rMenuItem|rPString|rPaletteWindow)\b
+      scope: constant.language
+    - match: \b(?i:rPatternList|rPicture|rPrintRecord|rRectList|rResName|rSoundSample)\b
+      scope: constant.language
+    - match: \b(?i:rStringList|rStyleBlock|rTERuler|rTaggedStrings|rText|rTextBlock)\b
+      scope: constant.language
+    - match: \b(?i:rTextForLETextBox2|rToolStartup|rTwoRects|rVersion|rWString|rWindColor)\b
+      scope: constant.language
+    - match: \b(?i:rWindParam1|rWindParam2|rXCMD|rXFCN|r_BBBB|reads|rmAllowCache)\b
+      scope: constant.language
+    - match: \b(?i:rmCustom|rmDisabled|rmNo_Xor|singleHandle|singlePtr)\b
+      scope: constant.language
+    - match: \b(?i:singleResource|updateSSfromBRAM|wantAbout|wantBoot|wantClose)\b
+      scope: constant.language
+    - match: \b(?i:wantCreate|wantEdit|wantEvents|wantHit|wantInit|wantMachine)\b
+      scope: constant.language
+    - match: \b(?i:wantRect|wantReserved2|wantReserved3|wantRun|wantShutDown|word)\b
+      scope: constant.language
+    - match: \b(?i:writes)\b
+      scope: constant.language
